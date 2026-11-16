@@ -1,13 +1,29 @@
-export const buildSummaryHtml = (title, patientId, sections) => {
+const escapeHtml = value => {
+  return String(value ?? '').replace(/[&<>"']/g, character => {
+    const entities = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;',
+    };
+
+    return entities[character];
+  });
+};
+
+export const buildSummaryHtml = (title, patientName, sections) => {
+  const safeTitle = escapeHtml(title);
+  const safePatientName = escapeHtml(patientName);
   const renderSection = section => {
-    if (!section.lines || section.lines.length === 0) return '';
+  if (!section || !Array.isArray(section.lines) || section.lines.length === 0) return '';
 
     return `
       <div class="section">
-        <h2>${section.title}</h2>
+        <h2>${escapeHtml(section.title)}</h2>
         <ul>
-          ${section.lines.map(line => `<li>${line}</li>`).join('')}
-        </ul>
+          ${section.lines.map(line => `<li>${escapeHtml(line)}</li>`).join('')}
+            </ul>
       </div>
     `;
   };
@@ -17,7 +33,7 @@ export const buildSummaryHtml = (title, patientId, sections) => {
     <html>
     <head>
       <meta charset="utf-8"/>
-      <title>${title}</title>
+      <title>${safeTitle}</title>
       <style>
         body {
           font-family: Arial, sans-serif;
@@ -63,13 +79,14 @@ export const buildSummaryHtml = (title, patientId, sections) => {
     </head>
 
     <body>
-      <h1>${title}</h1>
-      <p class="meta">Patient #${patientId}</p>
+      <h1>${safeTitle}</h1>
+      <p class="meta">Patient: ${safePatientName}</p>
       <hr/>
 
-      ${sections.map(renderSection).join('')}
+      ${(Array.isArray(sections) ? sections : []).map(renderSection).join('')}
 
     </body>
     </html>
   `;
 };
+

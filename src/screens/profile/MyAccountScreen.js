@@ -15,7 +15,12 @@ const fields = [
   'Eircode',
   'Medical card number',
 ];
-
+//account field can be edited: not connected to backend: to have auth acc update api 
+//no auth check before saving: backend must do 
+//sensitive data collection: reduce fields and to protect such data 
+// input validation required: email, phone, Eircode and field lengths; backend must enforce too.
+//No save/error handling: Add secure API response and error handling once connected.
+// No API/session usage currently: Connect updates through the existing authenticated apiClient.
 const MyAccountScreen = ({ navigation }) => {
   return (
     <ScreenWrapper safeAreaStyle={{ backgroundColor: colors.primaryLight }}>

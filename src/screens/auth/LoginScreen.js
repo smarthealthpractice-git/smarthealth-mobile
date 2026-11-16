@@ -13,7 +13,7 @@ import colors from '../../utils/colors';
 import { loginPatient } from '../../services/authService';
 import { saveSession } from '../../services/sessionService';
 
-const LoginScreen = ({ navigation }) => {
+const LoginScreen = ({ navigation, onLoginSuccess }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -56,25 +56,35 @@ const LoginScreen = ({ navigation }) => {
         displayName: res.name || username,
         email: username,
       });
-
-      navigation.replace('MainTabs');
+// token stroage--asyncstorage--hardening req
+      onLoginSuccess();
     } catch (error) {
-      console.log('LOGIN ERROR FULL:', error);
-      console.log('LOGIN ERROR RESPONSE:', error?.response?.data);
-      console.log('LOGIN ERROR MESSAGE:', error?.message);
+      console.log('LOGIN ERROR');
+      console.log('Login failed'); 
+      console.log('LOGIN ERROR MESSAGE:');
 
-      const message =
-        error?.response?.data?.message ||
-        error?.response?.data?.error ||
-        error?.message ||
-        'Unknown error';
+      const status = error?.response?.status;
 
-      Alert.alert('Login failed', message);
+let message = 'Unable to log in. Please try again later.';
+
+if (status === 401) {
+  message = 'Invalid email or password.';
+} else if (status === 403) {
+  message = 'You are not authorised to access this account.';
+} else if (!error?.response) {
+  message = 'Unable to connect to the server. Check your connection.';
+}
+
+    Alert.alert('Login failed', message);
+//client side role check - keep! investigation needed 
     } finally {
       setLoading(false);
     }
   };
-
+//patientid displayed-- investigate 
+//to add --session/auth guard 
+// https api path -good 
+//password field - secure text entry- good 
   return (
     <ImageBackground
       source={require('../../assets/images/onboarding_bg.png')}
@@ -83,6 +93,7 @@ const LoginScreen = ({ navigation }) => {
     >
       <View style={styles.overlay}>
         <View style={styles.card}>
+          
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <Text style={styles.backArrow}>←</Text>
           </TouchableOpacity>
@@ -207,3 +218,4 @@ const styles = StyleSheet.create({
 });
 
 export default LoginScreen;
+

@@ -27,8 +27,8 @@ const RegisterScreen = ({ navigation }) => {
   const [accountHolder, setAccountHolder] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-
-  const handleSignUp = () => {
+//session should be established: if backend securely supports it
+  const handleSignUp = () => { //never called backend: must implement real registration API
     if (
       !firstName.trim() ||
       !lastName.trim() ||
@@ -44,10 +44,13 @@ const RegisterScreen = ({ navigation }) => {
       Alert.alert('Password error', 'Passwords do not match');
       return;
     }
-
-    navigation.replace('MainTabs');
-  };
-
+// transport: no api call yet: backend or api must use https 
+    navigation.replace('MainTabs'); // no token or auth -- no entry until registration is successful 
+  }; //to be blocked: until auth registeration -- successful
+  //IBAN/PPS/medical card are ordinary text fields: input handling to reduce exposure 
+  // password strength req-- backend to enforce password policy 
+  // email format validation needed-- basic client validation-- backend to enforce 
+// only few fields are checked if empty -- backend needs to check everything: basic format checks?
   const renderInput = (placeholder, value, setter, extraProps = {}) => (
     <TextInput
       style={styles.input}
@@ -57,8 +60,8 @@ const RegisterScreen = ({ navigation }) => {
       onChangeText={setter}
       {...extraProps}
     />
-  );
-
+  );// sensitive data collection: PPS number, medical card number, IBAN and BIC, etc : collect and store if only needed by backend 
+//error handling? needed after registration API implemented 
   return (
     <ImageBackground
       source={require('../../assets/images/onboarding_bg.png')}

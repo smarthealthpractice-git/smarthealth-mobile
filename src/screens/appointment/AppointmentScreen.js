@@ -8,11 +8,12 @@ import {
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
+
 import { DatePickerModal } from 'react-native-paper-dates';
 import { useFocusEffect } from '@react-navigation/native';
 import colors from '../../utils/colors';
 import ScreenWrapper from '../../components/ScreenWrapper';
-import { getAvailability } from '../../services/appointmentService';
+import { getAvailability, getMyDoctors } from '../../services/appointmentService';
 
 const AppointmentScreen = ({ navigation, route }) => {
   const [selectedDate, setSelectedDate] = useState(getTodayIso());
@@ -20,23 +21,57 @@ const AppointmentScreen = ({ navigation, route }) => {
   const [slots, setSlots] = useState([]);
   const [open, setOpen] = useState(false);
 
+  const [doctors, setDoctors] = useState([]);
+  const [doctor, setDoctor] = useState(null);	
+
+//test needed with unauth user-- see what happens
   const prettyDate = useMemo(() => formatPrettyDate(selectedDate), [selectedDate]);
 
-  const loadSlots = useCallback(async date => {
-    setLoading(true);
-    try {
-      const data = await getAvailability({ doctorId: 1, date });
-      setSlots(Array.isArray(data) ? data : []);
-    } catch (error) {
-      console.log('LOAD SLOTS ERROR:', error?.response?.data || error?.message || error);
-      Alert.alert(
-        'Failed to load slots',
-        error?.response?.data?.message || error?.message || 'Unknown error',
-      );
-      setSlots([]);
-    } finally {
-      setLoading(false);
-    }
+//no auth check overall?
+    const loadSlots = useCallback(
+    async date => {
+      if (!doctor) {
+        setSlots([]);
+        return;
+      }
+      setLoading(true);
+      try {
+        const data = await getAvailability({
+          doctorId: doctor.doctorId,
+          practiceId: doctor.practiceId,
+          date,
+        });
+        setSlots(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.log('LOAD SLOTS ERROR');
+        Alert.alert(
+          'Failed to load slots',
+          error?.response?.data?.message || error?.message || 'Unknown error',
+        );
+        setSlots([]);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [doctor],
+  );
+
+  useEffect(() => {
+    const loadDoctors = async () => {
+      try {
+        const list = await getMyDoctors();
+        setDoctors(Array.isArray(list) ? list : []);
+        if (Array.isArray(list) && list.length > 0) {
+          setDoctor(list[0]);
+        }
+      } catch (error) {
+        Alert.alert(
+          'Failed to load doctors',
+          error?.response?.data?.message || error?.message || 'Unknown error',
+        );
+      }
+    };
+    loadDoctors();
   }, []);
 
   useEffect(() => {
@@ -67,12 +102,17 @@ const AppointmentScreen = ({ navigation, route }) => {
     setSelectedDate(picked);
   };
 
-  const handleSlotPress = slot => {
+    const handleSlotPress = slot => {
+    if (!doctor) {
+      return;
+    }
     navigation.navigate('ConfirmAppointment', {
       slot,
       selectedDate,
       prettyDate,
       slotLabel: formatLocalTime(slot.startUtc),
+      doctorId: doctor.doctorId,
+      practiceId: doctor.practiceId,
     });
   };
 
@@ -83,9 +123,18 @@ const AppointmentScreen = ({ navigation, route }) => {
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Text style={styles.backArrow}>←</Text>
-        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => {
+        if (navigation.canGoBack()) {
+          navigation.goBack();
+        } else {
+          navigation.navigate('MainTabs');
+      }
+  }}
+>
+  <Text style={styles.backArrow}>←</Text>
+</TouchableOpacity>
 
         <Text style={styles.dateTitle}>{prettyDate}</Text>
         <Text style={styles.subtitle}>Select a time slot</Text>
@@ -94,6 +143,21 @@ const AppointmentScreen = ({ navigation, route }) => {
           style={styles.selectDateButton}
           onPress={() => setOpen(true)}
         >
+
+        <Text style={styles.subtitle}>
+          Doctor: {doctor ? doctor.name : 'none approved yet'}
+        </Text>
+        {doctors.length > 1 &&
+          doctors.map(d => (
+            <TouchableOpacity
+              key={`${d.doctorId}-${d.practiceId}`}
+              style={styles.selectDateButton}
+              onPress={() => setDoctor(d)}
+            >
+              <Text style={styles.selectDateButtonText}>{d.name}</Text>
+            </TouchableOpacity>
+          ))}
+
           <Text style={styles.selectDateButtonText}>Select date</Text>
         </TouchableOpacity>
 

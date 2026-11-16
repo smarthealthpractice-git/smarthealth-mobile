@@ -123,7 +123,7 @@ const BottomTabs = () => {
           return <Ionicons name={iconName} size={20} color={color} />;
         },
       })}
-    >
+    > 
       <Tab.Screen name="Summary" component={SummaryScreen} options={{ title: 'Summary' }} />
       <Tab.Screen name="Home" component={HomeScreen} options={{ title: 'Home' }} />
       <Tab.Screen name="FAQ" component={FAQScreen} options={{ title: 'FAQ' }} />
