@@ -1,12 +1,14 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Keychain from 'react-native-keychain';
 
 const STORAGE_KEYS = {
-  token: 'token',
   role: 'role',
   myPatientId: 'myPatientId',
   displayName: 'displayName',
   email: 'email',
 };
+
+const KEYCHAIN_SERVICE = 'smarthealth-auth';
 
 export const saveSession = async ({
   token,
@@ -15,16 +17,15 @@ export const saveSession = async ({
   displayName,
   email,
 }) => {
-  try {
-    console.log('SAVE SESSION INPUT:', {
-      token,
-      role,
-      myPatientId,
-      displayName,
-      email,
-    });
+  try { 
+    await Keychain.setGenericPassword(
+    'smarthealth-user',
+    String(token ?? ''),
+    {
+      service: KEYCHAIN_SERVICE,
+    },
+  );
 
-    await AsyncStorage.setItem(STORAGE_KEYS.token, String(token ?? ''));
     await AsyncStorage.setItem(STORAGE_KEYS.role, String(role ?? ''));
     await AsyncStorage.setItem(
       STORAGE_KEYS.myPatientId,
@@ -36,38 +37,57 @@ export const saveSession = async ({
     );
     await AsyncStorage.setItem(STORAGE_KEYS.email, String(email ?? ''));
 
-    console.log('SESSION SAVED OK');
   } catch (error) {
-    console.log('SAVE SESSION ERROR:', error);
+    console.log('SAVE SESSION ERROR');
     throw new Error('Failed to save session');
   }
 };
 
 export const clearSession = async () => {
-  try {
-    await AsyncStorage.removeItem(STORAGE_KEYS.token);
-    await AsyncStorage.removeItem(STORAGE_KEYS.role);
-    await AsyncStorage.removeItem(STORAGE_KEYS.myPatientId);
-    await AsyncStorage.removeItem(STORAGE_KEYS.displayName);
-    await AsyncStorage.removeItem(STORAGE_KEYS.email);
-  } catch (error) {
-    console.log('CLEAR SESSION ERROR:', error);
-    throw new Error('Failed to clear session');
-  }
+let keychainCleared = false;
+let storageCleared = false;
+
+try {
+await Keychain.resetGenericPassword({
+service: KEYCHAIN_SERVICE,
+});
+keychainCleared = true;
+} catch (error) {
+console.log('Failed to clear secure session');
+}
+
+try {
+await AsyncStorage.multiRemove(Object.values(STORAGE_KEYS));
+storageCleared = true;
+} catch (error) {
+console.log('Failed to clear session metadata');
+}
+
+if (!keychainCleared || !storageCleared) {
+throw new Error('Failed to completely clear session');
+}
 };
+
 
 export const getToken = async () => {
   try {
-    return await AsyncStorage.getItem(STORAGE_KEYS.token);
+    const credentials = await Keychain.getGenericPassword({
+      service: KEYCHAIN_SERVICE,
+    });
+
+    if (!credentials) {
+      return null;
+    }
+
+    return credentials.password;
   } catch (error) {
-    console.log('GET TOKEN ERROR:', error);
     return null;
   }
 };
 
 export const getSession = async () => {
   try {
-    const token = await AsyncStorage.getItem(STORAGE_KEYS.token);
+    const token = await getToken();
     const role = await AsyncStorage.getItem(STORAGE_KEYS.role);
     const myPatientId = await AsyncStorage.getItem(STORAGE_KEYS.myPatientId);
     const displayName = await AsyncStorage.getItem(STORAGE_KEYS.displayName);
@@ -81,7 +101,7 @@ export const getSession = async () => {
       email: email || null,
     };
   } catch (error) {
-    console.log('GET SESSION ERROR:', error);
-    throw new Error('Failed to load session');
+    return null;
+    
   }
 };

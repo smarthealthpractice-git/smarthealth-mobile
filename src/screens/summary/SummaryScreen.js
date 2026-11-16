@@ -24,18 +24,29 @@ const SummaryScreen = ({ navigation }) => {
   const [header, setHeader] = useState('Summary');
   const [sections, setSections] = useState([]);
 
-  const forceLogoutToLogin = async () => {
-    try {
-      await clearSession();
-    } catch (e) {}
+const forceLogoutToLogin = useCallback(async () => {
+try {
+await clearSession();
+} catch (error) {
+console.log('Session cleanup failed during logout');
+Alert.alert(
+'Session error',
+'We could not securely clear your session. Please close the app and try again.',
+);
+return;
+}
 
-    navigation.reset({
-      index: 0,
-      routes: [{ name: 'Onboarding' }],
-    });
-  };
 
-  const formatDiagnoses = diagnoses => {
+navigation.reset({
+  index: 0,
+  routes: [{ name: 'Onboarding' }],
+});
+
+
+}, [navigation]);
+
+
+  const formatDiagnoses = useCallback((diagnoses) => {
     if (!Array.isArray(diagnoses) || diagnoses.length === 0) return [];
 
     return diagnoses.map(d => {
@@ -55,9 +66,9 @@ const SummaryScreen = ({ navigation }) => {
 
       return codes ? `${title} — ${codes}` : title;
     });
-  };
+  }, []);
 
-  const buildSections = (me, diagnoses) => {
+  const buildSections = useCallback((me, diagnoses) => {
     const result = [];
 
     const diag = formatDiagnoses(diagnoses);
@@ -84,11 +95,11 @@ const SummaryScreen = ({ navigation }) => {
     }
 
     return result;
-  };
+  }, [formatDiagnoses]);
 
   const loadSummary = useCallback(async () => {
     setLoading(true);
-
+    setSections([]);
     try {
       const session = await getSession();
       const patientId = session?.myPatientId;
@@ -98,7 +109,7 @@ const SummaryScreen = ({ navigation }) => {
         return;
       }
 
-      setHeader(`Summary • You (Patient #${patientId})`);
+      setHeader('Summary'); 
 
       const [me, diagnoses] = await Promise.all([
         getMe(),
@@ -107,23 +118,23 @@ const SummaryScreen = ({ navigation }) => {
 
       setSections(buildSections(me, diagnoses));
     } catch (error) {
-      console.log('SUMMARY ERROR:', error);
+      console.log('Failed to load summary');
 
       if (error?.response?.status === 401) {
-        forceLogoutToLogin();
+       await forceLogoutToLogin();
         return;
       }
 
       setSections([
         {
           title: 'Error',
-          lines: [error?.message || 'Failed to load summary'],
+          lines: ['Unable to load your summary. Please try again later.'],
         },
       ]);
     } finally {
       setLoading(false);
     }
-  }, []);
+ }, [buildSections, forceLogoutToLogin]);
 
   useFocusEffect(
     useCallback(() => {
@@ -131,32 +142,78 @@ const SummaryScreen = ({ navigation }) => {
     }, [loadSummary]),
   );
 
-  const handlePrint = async () => {
-    try {
-      const session = await getSession();
-      const patientId = session?.myPatientId;
+const handlePrint = async () => {
+try {
+const session = await getSession();
+const patientId = session?.myPatientId;
 
-      if (!patientId) {
-        Alert.alert('Error', 'Missing patient ID');
-        return;
-      }
 
-      if (!sections || sections.length === 0) {
-        Alert.alert('Error', 'No summary data to export');
-        return;
-      }
+  if (!patientId) {
+    Alert.alert('Error', 'Missing patient session');
+    return;
+  }
 
-      const html = buildSummaryHtml(header, patientId, sections);
+  if (loading) {
+  Alert.alert(
+    'Please wait',
+    'Your summary is still loading. Please try again shortly.',
+  );
+  return;
+}
 
-      await printHtml(`Patient_Summary_${patientId}`, html);
-    } catch (error) {
-      console.log('PRINT ERROR:', error);
-      Alert.alert(
-        'Print error',
-        error?.message || 'Failed to open print dialog',
-      );
-    }
-  };
+if (
+  !sections ||
+  sections.length === 0 ||
+  sections.some(section => section.title === 'Error') ||
+  sections.some(section =>
+    section.lines?.some(line =>
+      line === 'Missing patient session',
+    ),
+  )
+) {
+  Alert.alert(
+    'Summary unavailable',
+    'A complete summary is not available to print or save.',
+  );
+  return;
+}
+
+  Alert.alert(
+    'Sensitive health information',
+    'This summary contains private medical information. If you print or save it, make sure the printer or destination is secure and keep the exported file private.',
+    [
+      {
+        text: 'Cancel',
+        style: 'cancel',
+      },
+      {
+        text: 'Continue',
+        onPress: async () => {
+          try {
+            const html = buildSummaryHtml(header, session?.displayName || 'Patient', sections);
+            await printHtml('Patient_Summary', html);
+          } catch (error) {
+            console.log('Failed to print summary');
+            Alert.alert(
+              'Print error',
+              'Unable to print or save the summary. Please try again.',
+            );
+          }
+        },
+      },
+    ],
+  );
+} catch (error) {
+  console.log('Failed to prepare summary for printing');
+  Alert.alert(
+    'Print error',
+    'Unable to prepare the summary. Please try again.',
+  );
+}
+
+
+};
+
 
   return (
     <ScreenWrapper

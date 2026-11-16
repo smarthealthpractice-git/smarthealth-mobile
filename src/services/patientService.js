@@ -24,3 +24,11 @@ export const getMyVaccines = async () => {
   const response = await apiClient.get('/api/me/vaccines');
   return response.data;
 };
+
+/*Backend authorization is not visible here
+High
+Verify each endpoint only returns the authenticated patient's data.*/
+
+/*No client-side authorization logic
+Low
+Fine; authorization should primarily be enforced by the backend. */
