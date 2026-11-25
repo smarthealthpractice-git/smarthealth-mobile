@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import {
   View,
@@ -8,15 +9,24 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
+
 import ScreenWrapper from '../../components/ScreenWrapper';
 import colors from '../../utils/colors';
 import { bookAppointment } from '../../services/appointmentService';
 
 const ConfirmAppointmentScreen = ({ route, navigation }) => {
-  const { slot, prettyDate, slotLabel, selectedDate } = route.params || {};
+    const { slot, prettyDate, slotLabel, selectedDate, doctorId, practiceId } = route.params || {};
+
+ //taken from client supplied values can be manipulated 
   const [loading, setLoading] = useState(false);
 
   const handleConfirm = async paymentMode => {
+
+	    if (!doctorId) {
+      Alert.alert('Error', 'Missing doctor information');
+      return;
+    }
+
     if (!slot?.startUtc || !slot?.endUtc) {
       Alert.alert('Error', 'Missing slot information');
       return;
@@ -26,11 +36,12 @@ const ConfirmAppointmentScreen = ({ route, navigation }) => {
 
     try {
       await bookAppointment({
-        doctorId: 1,
-        startUtc: slot.startUtc,
+        doctorId,
+	practiceId, 
+        startUtc: slot.startUtc, //client controls appointment time xxx
         endUtc: slot.endUtc,
-        paymentMode,
-      });
+        paymentMode, //check must be there to validate if user is allowed to use med card 
+      }); // avoids users from avoiding required payment when applicable 
 
       Alert.alert('Success', 'Appointment confirmed', [
         {
@@ -40,11 +51,11 @@ const ConfirmAppointmentScreen = ({ route, navigation }) => {
               refreshSlots: true,
               selectedDate,
             });
-          },
+          }, //test req: no token? to book endpoint-- 401 unauth result
         },
-      ]);
+      ]); // test req: valid pid.token? book endpoint: backend verify patient from jwt
     } catch (error) {
-      console.log('BOOK APPOINTMENT ERROR:', error?.response?.data || error?.message || error);
+      console.log('BOOK APPOINTMENT ERROR'); 
       Alert.alert(
         'Booking failed',
         error?.response?.data?.message || error?.message || 'Unknown error',
@@ -53,7 +64,7 @@ const ConfirmAppointmentScreen = ({ route, navigation }) => {
       setLoading(false);
     }
   };
-
+//must not rely on UI to enforce price
   return (
     <ScreenWrapper safeAreaStyle={{ backgroundColor: colors.primaryLight }}>
       <View style={styles.container}>
@@ -78,7 +89,7 @@ const ConfirmAppointmentScreen = ({ route, navigation }) => {
 
             <View style={styles.infoCard}>
               <Text style={styles.priceText}>€30 consultation fee</Text>
-              <Text style={styles.hintText}>
+              <Text style={styles.hintText}> 
                 Your saved payment details will be charged.
               </Text>
             </View>

@@ -3,7 +3,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Text } from 'react-native';
 
 const Tab = createBottomTabNavigator();
-
+//after login, main area of app
 // Temporary screens (we replace later)
 const SummaryScreen = () => <Text>Summary</Text>;
 const HomeScreen = () => <Text>Home</Text>;
@@ -23,3 +23,5 @@ export default function MainTabs() {
     </Tab.Navigator>
   );
 }
+
+//no auth check ? unauth user can access maintabs?

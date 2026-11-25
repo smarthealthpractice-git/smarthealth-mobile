@@ -7,7 +7,8 @@ import {
   ImageBackground,
 } from 'react-native';
 import colors from '../../utils/colors';
-
+//login/register nav- unrestricted: check out 
+//
 const OnboardingScreen = ({ navigation }) => {
   return (
     <ImageBackground

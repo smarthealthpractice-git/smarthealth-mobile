@@ -4,6 +4,12 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import ScreenWrapper from '../../components/ScreenWrapper';
 import colors from '../../utils/colors';
 
+//password update: connect to backend: with auth password change api 
+//no password verify: Require the existing password before allowing a password change.
+//No password validation: Enforce password strength and confirmation; backend must enforce it too.
+//No error/success handling: Add safe responses once the API is implemented.
+//Backend must invalidate old sessions/tokens after password change: Verify this when implementing the backend endpoint. 
+
 const SettingsScreen = ({ navigation }) => {
   return (
     <ScreenWrapper safeAreaStyle={{ backgroundColor: colors.primaryLight }}>
@@ -16,6 +22,12 @@ const SettingsScreen = ({ navigation }) => {
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
+	  <TouchableOpacity
+          style={[styles.card, styles.linkCard]}
+          onPress={() => navigation.navigate('DoctorAccess')}>
+          <Text style={styles.linkText}>Doctor access</Text>
+          <Ionicons name="chevron-forward" size={20} 		color={colors.textDark} />
+        </TouchableOpacity>
         <View style={styles.card}>
           <TextInput
             style={styles.input}
@@ -49,6 +61,14 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: 18, fontWeight: '700', color: colors.textDark },
   content: { padding: 16 },
+    linkCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    marginBottom: 12,
+  },
+  linkText: { fontSize: 16, fontWeight: '600', color: colors.textDark },
   card: {
     backgroundColor: colors.white,
     borderRadius: 24,

@@ -97,7 +97,12 @@ const HomeScreen = () => {
         diagnosis?.icd10 ||
         diagnosis?.snomed?.[0] ||
         'Diagnosis';
-
+//patient id- exposed
+//api errors- logged with response data : remove from console.log
+//session data: local load:async stroage 
+// practice actions: placeholders? check when features implemented 
+// patient id: read from local storage: not to rely for auth -- derive from jwt-pid
+//modals: exposes health info: make sure backend endpoints only get auth patient info 
       const codes = [
         diagnosis?.icd10 ? `ICD-10 ${diagnosis.icd10}` : null,
         diagnosis?.snomed?.[0] ? `SNOMED ${diagnosis.snomed[0]}` : null,
@@ -110,7 +115,7 @@ const HomeScreen = () => {
   };
 
   const handleApiError = error => {
-    console.log('HOME API ERROR:', error?.response?.data || error?.message || error);
+    console.log('Failed to load patient data');
 
     if (error?.response?.status === 401) {
       forceLogoutToLogin();
@@ -172,8 +177,8 @@ const HomeScreen = () => {
       const handled = handleApiError(error);
       if (!handled) {
         openListModal('Error', [
-          error?.response?.data?.message || error?.message || 'Failed to load data',
-        ]);
+            'Unable to load this information. Please try again later.',
+       ]);
       }
     } finally {
       setLoading(false);
@@ -203,7 +208,7 @@ const HomeScreen = () => {
           showsVerticalScrollIndicator={false}
         >
           <Text style={styles.greeting}>
-            Hello, {patientId ? `Patient #${patientId}` : displayName}
+            Hello, {displayName}
           </Text>
 
           <Text style={styles.subtitle}>Your Health Overview</Text>
